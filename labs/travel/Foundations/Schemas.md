@@ -1,4 +1,4 @@
-Lab  - Build a Bookings schema (ExperienceEvent)
+Lab 1.1 - Build a Bookings schema (ExperienceEvent)
 ==========
 <table style="border-collapse: collapse; border: none;" class="tab" cellspacing="0" cellpadding="0">
 
