@@ -1,4 +1,4 @@
-Lab 1.1 - Ingestion - CSV to XMD Mapping
+Lab 3.1 - Ingestion - CSV to XMD Mapping
 ==========
 <table style="border-collapse: collapse; border: none;" class="tab" cellspacing="0" cellpadding="0">
 
