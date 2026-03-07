@@ -1,0 +1,430 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA000001000000000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000101; };
+		AA000001000000000000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000102; };
+		AA000001000000000000003 /* GameViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000103; };
+		AA000001000000000000004 /* DoomRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000104; };
+		AA000001000000000000005 /* TouchControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000105; };
+		AA000001000000000000006 /* doomgeneric_ios.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000106; settings = {COMPILER_FLAGS = "-DNORMALUNIX -DLINUX -Wno-deprecated-declarations -Wno-unused-result"; }; };
+		AA000001000000000000007 /* DoomShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000107; };
+		AA000001000000000000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000108; };
+		AA000001000000000000009 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000109; };
+		AA000001000000000000010 /* freedoom1.wad in Resources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000110; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		AA000001000000000000101 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		AA000001000000000000102 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		AA000001000000000000103 /* GameViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameViewController.swift; sourceTree = "<group>"; };
+		AA000001000000000000104 /* DoomRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoomRenderer.swift; sourceTree = "<group>"; };
+		AA000001000000000000105 /* TouchControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TouchControlsView.swift; sourceTree = "<group>"; };
+		AA000001000000000000106 /* doomgeneric_ios.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = doomgeneric_ios.c; sourceTree = "<group>"; };
+		AA000001000000000000107 /* DoomShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = DoomShaders.metal; sourceTree = "<group>"; };
+		AA000001000000000000108 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA000001000000000000109 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA000001000000000000110 /* freedoom1.wad */ = {isa = PBXFileReference; lastKnownFileType = file; path = freedoom1.wad; sourceTree = "<group>"; };
+		AA000001000000000000111 /* DoomBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DoomBridge.h; sourceTree = "<group>"; };
+		AA000001000000000000112 /* doomgeneric_ios.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = doomgeneric_ios.h; sourceTree = "<group>"; };
+		AA000001000000000000113 /* DoomIOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DoomIOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA000001000000000000114 /* doomgeneric */ = {isa = PBXFileReference; lastKnownFileType = folder; path = doomgeneric; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA000001000000000000201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		AA000001000000000000901 /* Compile doomgeneric engine */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Compile doomgeneric engine";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/libdoomgeneric.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Compile all doomgeneric C source files into a static library.\n# This runs before the Swift/Metal compile phase.\n\nset -e\n\nDOOM_SRC=\"${SRCROOT}/DoomIOS/doomgeneric\"\nOUT_LIB=\"${BUILT_PRODUCTS_DIR}/libdoomgeneric.a\"\nOBJ_DIR=\"${DERIVED_FILE_DIR}/doomgeneric_objs\"\n\nif [ ! -d \"${DOOM_SRC}\" ]; then\n  echo \"error: doomgeneric sources not found at ${DOOM_SRC}\"\n  echo \"error: Run ios-doom/setup.sh first to fetch the engine sources.\"\n  exit 1\nfi\n\nmkdir -p \"${OBJ_DIR}\"\n\n# Compiler flags matching what Doom expects\nCFLAGS=\"-DNORMALUNIX -DLINUX -O2 -arch ${ARCHS}\\\n  -isysroot ${SDKROOT}\\\n  -miphoneos-version-min=${IPHONEOS_DEPLOYMENT_TARGET}\\\n  -I${DOOM_SRC}\\\n  -Wno-deprecated-declarations -Wno-unused-result\\\n  -Wno-implicit-function-declaration -Wno-int-conversion\"\n\n# Compile each .c file in the doomgeneric directory\nOBJ_FILES=\"\"\nfor SRC in \"${DOOM_SRC}\"/*.c; do\n  BASENAME=$(basename \"${SRC}\" .c)\n  OBJ=\"${OBJ_DIR}/${BASENAME}.o\"\n  xcrun clang ${CFLAGS} -c \"${SRC}\" -o \"${OBJ}\"\n  OBJ_FILES=\"${OBJ_FILES} ${OBJ}\"\ndone\n\n# Create static library\nxcrun ar rcs \"${OUT_LIB}\" ${OBJ_FILES}\n\necho \"doomgeneric engine compiled: ${OUT_LIB}\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXGroup section */
+		AA000001000000000000301 /* DoomIOS */ = {
+			isa = PBXGroup;
+			children = (
+				AA000001000000000000302 /* DoomIOS */,
+				AA000001000000000000303 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA000001000000000000302 /* DoomIOS */ = {
+			isa = PBXGroup;
+			children = (
+				AA000001000000000000101 /* AppDelegate.swift */,
+				AA000001000000000000102 /* SceneDelegate.swift */,
+				AA000001000000000000103 /* GameViewController.swift */,
+				AA000001000000000000104 /* DoomRenderer.swift */,
+				AA000001000000000000105 /* TouchControlsView.swift */,
+				AA000001000000000000106 /* doomgeneric_ios.c */,
+				AA000001000000000000111 /* DoomBridge.h */,
+				AA000001000000000000112 /* doomgeneric_ios.h */,
+				AA000001000000000000304 /* Shaders */,
+				AA000001000000000000108 /* Assets.xcassets */,
+				AA000001000000000000109 /* Info.plist */,
+				AA000001000000000000110 /* freedoom1.wad */,
+				AA000001000000000000114 /* doomgeneric */,
+			);
+			path = DoomIOS;
+			sourceTree = "<group>";
+		};
+		AA000001000000000000303 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				AA000001000000000000113 /* DoomIOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AA000001000000000000304 /* Shaders */ = {
+			isa = PBXGroup;
+			children = (
+				AA000001000000000000107 /* DoomShaders.metal */,
+			);
+			path = Shaders;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AA000001000000000000401 /* DoomIOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA000001000000000000501;
+			buildPhases = (
+				AA000001000000000000901 /* Compile doomgeneric engine */,
+				AA000001000000000000601 /* Sources */,
+				AA000001000000000000201 /* Frameworks */,
+				AA000001000000000000602 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DoomIOS;
+			productName = DoomIOS;
+			productReference = AA000001000000000000113 /* DoomIOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA000001000000000000701 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					AA000001000000000000401 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = AA000001000000000000502;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = AA000001000000000000301;
+			productRefGroup = AA000001000000000000303 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AA000001000000000000401 /* DoomIOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		AA000001000000000000602 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000001000000000000008 /* Assets.xcassets in Resources */,
+				AA000001000000000000009 /* Info.plist in Resources */,
+				AA000001000000000000010 /* freedoom1.wad in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		AA000001000000000000601 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA000001000000000000001 /* AppDelegate.swift in Sources */,
+				AA000001000000000000002 /* SceneDelegate.swift in Sources */,
+				AA000001000000000000003 /* GameViewController.swift in Sources */,
+				AA000001000000000000004 /* DoomRenderer.swift in Sources */,
+				AA000001000000000000005 /* TouchControlsView.swift in Sources */,
+				AA000001000000000000006 /* doomgeneric_ios.c in Sources */,
+				AA000001000000000000007 /* DoomShaders.metal in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA000001000000000000801 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_EXCEPTION = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AA000001000000000000802 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_EXCEPTION = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		AA000001000000000000803 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DoomIOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.DoomIOS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "DoomIOS/DoomBridge.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				/* doomgeneric sources need these defines and the engine headers */
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"NORMALUNIX=1",
+					"LINUX=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/DoomIOS/doomgeneric",
+					"$(inherited)",
+				);
+				OTHER_CFLAGS = (
+					"-Wno-deprecated-declarations",
+					"-Wno-unused-result",
+					"-Wno-implicit-function-declaration",
+				);
+				OTHER_LDFLAGS = (
+					"-L$(BUILT_PRODUCTS_DIR)",
+					"-ldoomgeneric",
+				);
+				LIBRARY_SEARCH_PATHS = "$(BUILT_PRODUCTS_DIR)";
+			};
+			name = Debug;
+		};
+		AA000001000000000000804 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = DoomIOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.DoomIOS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "DoomIOS/DoomBridge.h";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"NORMALUNIX=1",
+					"LINUX=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/DoomIOS/doomgeneric",
+					"$(inherited)",
+				);
+				OTHER_CFLAGS = (
+					"-Wno-deprecated-declarations",
+					"-Wno-unused-result",
+					"-Wno-implicit-function-declaration",
+				);
+				OTHER_LDFLAGS = (
+					"-L$(BUILT_PRODUCTS_DIR)",
+					"-ldoomgeneric",
+				);
+				LIBRARY_SEARCH_PATHS = "$(BUILT_PRODUCTS_DIR)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA000001000000000000501 /* Build configuration list for PBXNativeTarget "DoomIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA000001000000000000803 /* Debug */,
+				AA000001000000000000804 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA000001000000000000502 /* Build configuration list for PBXProject "DoomIOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA000001000000000000801 /* Debug */,
+				AA000001000000000000802 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = AA000001000000000000701 /* Project object */;
+}
