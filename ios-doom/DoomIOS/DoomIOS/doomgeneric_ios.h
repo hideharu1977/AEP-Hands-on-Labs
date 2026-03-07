@@ -15,15 +15,26 @@ extern "C" {
  * Push a key event into the Doom key queue.
  * @param pressed  1 = key down, 0 = key up
  * @param doomKey  Key code from doomkeys.h (e.g. KEY_RCTRL = 0x80)
+ * Thread-safe: may be called from any thread (designed for UI/main thread).
  */
 void dg_ios_push_key(int pressed, unsigned char doomKey);
 
 /**
- * Returns a pointer to the latest rendered 320x200 RGBA framebuffer,
- * or NULL if no frame has been rendered yet.
- * The pointer is valid until the next call to DG_DrawFrame().
+ * Copy the latest rendered 320×200 BGRA frame into outBuffer if a new frame
+ * is available since the last call. outBuffer must be at least
+ * DOOMGENERIC_RESX * DOOMGENERIC_RESY * 4 bytes.
+ *
+ * Returns 1 if a new frame was copied, 0 if the frame has not changed.
+ * Thread-safe: designed to be called from the Metal render thread.
  */
-uint32_t *dg_ios_get_framebuffer(void);
+int dg_ios_copy_frame_if_new(uint8_t *outBuffer);
+
+/**
+ * Pause or resume the Doom game loop.
+ * When paused, DG_DrawFrame() stalls the game thread with minimal CPU use.
+ * Call with paused=1 when the app enters the background.
+ */
+void dg_ios_set_paused(int paused);
 
 #ifdef __cplusplus
 }

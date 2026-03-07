@@ -53,30 +53,45 @@ class GameViewController: UIViewController {
     // MARK: - Game loop
 
     private func startDoom() {
-        DispatchQueue.global(qos: .userInteractive).async { [weak self] in
-            guard self != nil else { return }
-
-            // Locate the Freedoom WAD bundled in the app
-            guard let wadPath = Bundle.main.path(forResource: "freedoom1", ofType: "wad") else {
-                DispatchQueue.main.async {
-                    self?.showMissingWADAlert()
-                }
-                return
-            }
-
-            // Build argv: doom -iwad /path/to/freedoom1.wad
-            let args: [String] = ["doom", "-iwad", wadPath]
-            // strdup so C code gets stable char* pointers
-            var argv: [UnsafeMutablePointer<CChar>?] = args.map { strdup($0) }
-            defer { argv.forEach { free($0) } }
-
-            doomgeneric_Create(Int32(args.count), &argv)
-
-            // Run the Doom tick loop forever (Doom manages its own timing)
-            while true {
-                doomgeneric_Tick()
-            }
+        guard let wadPath = Bundle.main.path(forResource: "freedoom1", ofType: "wad") else {
+            showMissingWADAlert()
+            return
         }
+
+        let args: [String] = ["doom", "-iwad", wadPath]
+        // Allocate heap C-strings; these must outlive the game thread (forever).
+        let cArgs: [UnsafeMutablePointer<CChar>?] = args.map { strdup($0) }
+        let argc = Int32(args.count)
+
+        /*
+         * Use a raw pthread with an 8 MB stack.
+         * GCD queues default to 512 KB, which can overflow during Doom's
+         * recursive BSP rendering. 8 MB matches the iOS main-thread stack size.
+         */
+        var attr = pthread_attr_t()
+        pthread_attr_init(&attr)
+        pthread_attr_setstacksize(&attr, 8 * 1024 * 1024)
+
+        // Box the context so we can pass it through the C void* bridge.
+        let ctx = DoomThreadContext(argc: argc, argv: cArgs)
+        let ctxPtr = Unmanaged.passRetained(ctx).toOpaque()
+
+        var tid: pthread_t?
+        pthread_create(&tid, &attr, doomThreadEntry, ctxPtr)
+        pthread_attr_destroy(&attr)
+        // tid is intentionally not joined — Doom never returns.
+    }
+
+    // MARK: - Pause / resume (called from SceneDelegate)
+
+    func handleForeground() {
+        dg_ios_set_paused(0)
+        metalView.isPaused = false
+    }
+
+    func handleBackground() {
+        dg_ios_set_paused(1)
+        metalView.isPaused = true
     }
 
     // MARK: - Error handling
@@ -92,4 +107,30 @@ class GameViewController: UIViewController {
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
     }
+}
+
+// MARK: - Doom thread bootstrap
+
+/// Context object passed through the pthread C entry-point.
+private final class DoomThreadContext {
+    let argc: Int32
+    let argv: [UnsafeMutablePointer<CChar>?]
+    init(argc: Int32, argv: [UnsafeMutablePointer<CChar>?]) {
+        self.argc = argc
+        self.argv = argv
+    }
+}
+
+/// C-compatible thread entry point for the Doom game loop.
+private func doomThreadEntry(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
+    guard let ptr = ptr else { return nil }
+    let ctx = Unmanaged<DoomThreadContext>.fromOpaque(ptr).takeRetainedValue()
+    var argv = ctx.argv
+    argv.withUnsafeMutableBufferPointer { buf in
+        doomgeneric_Create(ctx.argc, buf.baseAddress)
+    }
+    // doomgeneric_Create runs the game loop forever via D_DoomMain → D_DoomLoop.
+    // If it somehow returns (shouldn't happen), free the C strings.
+    ctx.argv.forEach { free($0) }
+    return nil
 }

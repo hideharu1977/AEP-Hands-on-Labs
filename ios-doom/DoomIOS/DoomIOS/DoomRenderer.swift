@@ -1,10 +1,14 @@
 import MetalKit
 
 /// Renders the Doom 320×200 framebuffer to the screen using Metal.
+///
 /// Each draw call:
-///   1. Reads the latest framebuffer from the C engine via dg_ios_get_framebuffer()
-///   2. Uploads the pixels to a 320×200 MTLTexture
-///   3. Draws a fullscreen quad using DoomShaders.metal
+///   1. Tries to pull a new frame from the C engine via dg_ios_copy_frame_if_new()
+///   2. Uploads the pixels to a 320×200 BGRA8 MTLTexture
+///   3. Draws a letterboxed quad using DoomShaders.metal
+///
+/// Letterboxing maintains Doom's 8:5 (320×200) aspect ratio regardless of
+/// the device screen size or orientation.
 class DoomRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Metal objects
@@ -13,6 +17,17 @@ class DoomRenderer: NSObject, MTKViewDelegate {
     private let commandQueue: MTLCommandQueue
     private var renderPipeline: MTLRenderPipelineState!
     private var doomTexture: MTLTexture!
+
+    // MARK: - Frame staging buffer
+
+    private let doomWidth  = 320
+    private let doomHeight = 200
+    /// CPU-side buffer reused every frame to avoid repeated allocation.
+    private var stagingBuffer: [UInt8]
+
+    // MARK: - Letterbox uniform
+    // SIMD4<Float> = (left, bottom, right, top) in NDC, matches QuadUniforms in .metal
+    private var quadRect = SIMD4<Float>(-1, -1, 1, 1)   // default: fullscreen
 
     // MARK: - Init
 
@@ -23,6 +38,7 @@ class DoomRenderer: NSObject, MTKViewDelegate {
         }
         self.device = device
         self.commandQueue = commandQueue
+        self.stagingBuffer = [UInt8](repeating: 0, count: 320 * 200 * 4)
         super.init()
 
         guard buildPipeline(view: view),
@@ -31,23 +47,28 @@ class DoomRenderer: NSObject, MTKViewDelegate {
         }
 
         view.delegate = self
-        view.framebufferOnly = false
+        view.colorPixelFormat = .bgra8Unorm
+        view.framebufferOnly = true
         view.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
-        view.preferredFramesPerSecond = 35  // Classic Doom runs at ~35 Hz
+        // Drive the display at native refresh rate; the game loop runs at ~35 Hz
+        // independently — the renderer simply re-uploads the same texture when
+        // no new frame is available.
+        view.preferredFramesPerSecond = UIScreen.main.maximumFramesPerSecond
     }
 
     // MARK: - Setup
 
     private func buildPipeline(view: MTKView) -> Bool {
-        guard let library = device.makeDefaultLibrary(),
-              let vertexFn   = library.makeFunction(name: "doom_vertex"),
-              let fragmentFn = library.makeFunction(name: "doom_fragment") else {
+        guard let library  = device.makeDefaultLibrary(),
+              let vertexFn = library.makeFunction(name: "doom_vertex"),
+              let fragFn   = library.makeFunction(name: "doom_fragment") else {
+            print("[DoomRenderer] Failed to load shader functions")
             return false
         }
 
         let descriptor = MTLRenderPipelineDescriptor()
         descriptor.vertexFunction   = vertexFn
-        descriptor.fragmentFunction = fragmentFn
+        descriptor.fragmentFunction = fragFn
         descriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat
 
         do {
@@ -60,53 +81,83 @@ class DoomRenderer: NSObject, MTKViewDelegate {
     }
 
     private func buildTexture() -> Bool {
-        let descriptor = MTLTextureDescriptor.texture2DDescriptor(
+        let desc = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: .bgra8Unorm,
-            width:  320,
-            height: 200,
+            width:  doomWidth,
+            height: doomHeight,
             mipmapped: false
         )
-        descriptor.usage = [.shaderRead]
-        descriptor.storageMode = .shared
-        guard let texture = device.makeTexture(descriptor: descriptor) else {
-            return false
-        }
-        doomTexture = texture
+        desc.usage = [.shaderRead]
+        // .shared = CPU + GPU share memory on iOS (unified memory architecture)
+        desc.storageMode = .shared
+        guard let tex = device.makeTexture(descriptor: desc) else { return false }
+        doomTexture = tex
         return true
     }
 
     // MARK: - MTKViewDelegate
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
-        // No resize handling needed — Doom always renders at 320×200
+        updateLetterbox(drawableSize: size)
     }
 
     func draw(in view: MTKView) {
-        // Upload latest framebuffer from C engine
-        if let fb = dg_ios_get_framebuffer() {
-            let region = MTLRegionMake2D(0, 0, 320, 200)
-            doomTexture.replace(
-                region: region,
-                mipmapLevel: 0,
-                withBytes: fb,
-                bytesPerRow: 320 * 4  // 4 bytes per BGRA pixel
-            )
+        // Pull latest frame from the game thread (no-op if nothing new)
+        stagingBuffer.withUnsafeMutableBytes { ptr in
+            _ = dg_ios_copy_frame_if_new(
+                    ptr.baseAddress!.assumingMemoryBound(to: UInt8.self))
         }
 
-        guard let renderPassDescriptor = view.currentRenderPassDescriptor,
-              let drawable              = view.currentDrawable,
-              let commandBuffer         = commandQueue.makeCommandBuffer(),
-              let encoder               = commandBuffer.makeRenderCommandEncoder(
-                                             descriptor: renderPassDescriptor) else {
+        // Upload to GPU texture (always, so the previous frame stays visible)
+        let region = MTLRegionMake2D(0, 0, doomWidth, doomHeight)
+        doomTexture.replace(region: region,
+                            mipmapLevel: 0,
+                            withBytes: stagingBuffer,
+                            bytesPerRow: doomWidth * 4)
+
+        // Encode render pass
+        guard let rpd      = view.currentRenderPassDescriptor,
+              let drawable  = view.currentDrawable,
+              let cmdBuf    = commandQueue.makeCommandBuffer(),
+              let encoder   = cmdBuf.makeRenderCommandEncoder(descriptor: rpd) else {
             return
         }
 
         encoder.setRenderPipelineState(renderPipeline)
         encoder.setFragmentTexture(doomTexture, index: 0)
-        encoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: 6)
+
+        // Upload the letterbox rect as vertex buffer 0 (QuadUniforms in .metal)
+        var rect = quadRect
+        encoder.setVertexBytes(&rect,
+                               length: MemoryLayout<SIMD4<Float>>.stride,
+                               index: 0)
+
+        // Triangle strip: 4 vertices = fullscreen (or letterboxed) quad
+        encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
         encoder.endEncoding()
 
-        commandBuffer.present(drawable)
-        commandBuffer.commit()
+        cmdBuf.present(drawable)
+        cmdBuf.commit()
+    }
+
+    // MARK: - Letterboxing
+
+    private func updateLetterbox(drawableSize size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        let screenAspect = Float(size.width  / size.height)
+        let doomAspect   = Float(doomWidth)  / Float(doomHeight)  // 320/200 = 1.6
+
+        let quadW: Float
+        let quadH: Float
+        if screenAspect > doomAspect {
+            // Screen wider than Doom: pillarbox (shrink width)
+            quadH = 1.0
+            quadW = doomAspect / screenAspect
+        } else {
+            // Screen taller than Doom: letterbox (shrink height)
+            quadW = 1.0
+            quadH = screenAspect / doomAspect
+        }
+        quadRect = SIMD4<Float>(-quadW, -quadH, quadW, quadH)
     }
 }

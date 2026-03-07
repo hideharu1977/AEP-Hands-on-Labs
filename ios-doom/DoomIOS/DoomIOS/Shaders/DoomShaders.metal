@@ -1,12 +1,11 @@
 /*
  * DoomShaders.metal
  *
- * Minimal Metal shaders for rendering the Doom 320×200 framebuffer
- * to the full screen with nearest-neighbour (pixel-perfect) filtering.
+ * Renders the Doom 320×200 framebuffer onto a letterboxed quad using
+ * nearest-neighbour sampling for authentic pixel rendering.
  *
- * The vertex shader generates a fullscreen quad from vertex IDs —
- * no vertex buffer required. UV [0,0] is top-left, [1,1] is bottom-right
- * to match the Doom framebuffer layout.
+ * QuadUniforms supplies the NDC rect so the CPU can control aspect-ratio
+ * letterboxing without recompiling the shader.
  */
 
 #include <metal_stdlib>
@@ -19,34 +18,41 @@ struct VertexOut {
     float2 uv;
 };
 
+/*
+ * NDC bounding rect for the quad:
+ *   x = left edge,  y = bottom edge
+ *   z = right edge, w = top edge
+ * All values in Normalised Device Coordinates (-1 … +1).
+ *
+ * For fullscreen: { -1, -1, 1, 1 }
+ * For letterboxed: computed by DoomRenderer on resize.
+ */
+struct QuadUniforms {
+    float4 ndcRect;  // x=left, y=bottom, z=right, w=top
+};
+
 // ─── Vertex Shader ────────────────────────────────────────────────────────────
 
 /*
- * Produces a fullscreen triangle-pair (2 triangles = 6 vertices) covering
- * clip-space [-1,1]×[-1,1]. No vertex buffer is needed — vertex IDs 0-5
- * are used directly.
- *
- * Clip-space Y is flipped vs texture V, so UV.y = 1 - clip-y/2.
+ * Triangle-strip quad: 4 vertices, 2 triangles.
+ * vertex_id: 0=TL, 1=TR, 2=BL, 3=BR
  */
-vertex VertexOut doom_vertex(uint vid [[vertex_id]]) {
-    // Two triangles covering NDC space
-    constexpr float2 positions[6] = {
-        { -1.0f, -1.0f },   // bottom-left
-        {  1.0f, -1.0f },   // bottom-right
-        { -1.0f,  1.0f },   // top-left
-        {  1.0f, -1.0f },   // bottom-right
-        {  1.0f,  1.0f },   // top-right
-        { -1.0f,  1.0f },   // top-left
+vertex VertexOut doom_vertex(
+    uint vid [[vertex_id]],
+    constant QuadUniforms &u [[buffer(0)]])
+{
+    float2 positions[4] = {
+        float2(u.ndcRect.x, u.ndcRect.w),  // TL: left,  top
+        float2(u.ndcRect.z, u.ndcRect.w),  // TR: right, top
+        float2(u.ndcRect.x, u.ndcRect.y),  // BL: left,  bottom
+        float2(u.ndcRect.z, u.ndcRect.y),  // BR: right, bottom
     };
-    // UV: top-left = (0,0), bottom-right = (1,1)
-    // NDC y=+1 → top of screen → UV.y=0
-    constexpr float2 uvs[6] = {
-        { 0.0f, 1.0f },
-        { 1.0f, 1.0f },
-        { 0.0f, 0.0f },
-        { 1.0f, 1.0f },
-        { 1.0f, 0.0f },
-        { 0.0f, 0.0f },
+    // UV origin (0,0) is top-left to match the Doom framebuffer layout
+    float2 uvs[4] = {
+        float2(0.0f, 0.0f),  // TL
+        float2(1.0f, 0.0f),  // TR
+        float2(0.0f, 1.0f),  // BL
+        float2(1.0f, 1.0f),  // BR
     };
 
     VertexOut out;
@@ -57,12 +63,10 @@ vertex VertexOut doom_vertex(uint vid [[vertex_id]]) {
 
 // ─── Fragment Shader ─────────────────────────────────────────────────────────
 
-/*
- * Samples the Doom framebuffer texture with nearest-neighbour filtering
- * for authentic pixelated look. The texture is BGRA8Unorm (320×200).
- */
-fragment float4 doom_fragment(VertexOut       in  [[stage_in]],
-                               texture2d<float> tex [[texture(0)]]) {
+fragment float4 doom_fragment(
+    VertexOut        in  [[stage_in]],
+    texture2d<float> tex [[texture(0)]])
+{
     constexpr sampler s(coord::normalized,
                         address::clamp_to_edge,
                         filter::nearest);
