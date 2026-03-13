@@ -15,7 +15,6 @@
 		AA000001000000000000006 /* doomgeneric_ios.c in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000106; settings = {COMPILER_FLAGS = "-DNORMALUNIX -DLINUX -Wno-deprecated-declarations -Wno-unused-result"; }; };
 		AA000001000000000000007 /* DoomShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000107; };
 		AA000001000000000000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000108; };
-		AA000001000000000000009 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000109; };
 		AA000001000000000000010 /* freedoom1.wad in Resources */ = {isa = PBXBuildFile; fileRef = AA000001000000000000110; };
 /* End PBXBuildFile section */
 
@@ -174,7 +173,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AA000001000000000000008 /* Assets.xcassets in Resources */,
-				AA000001000000000000009 /* Info.plist in Resources */,
 				AA000001000000000000010 /* freedoom1.wad in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
