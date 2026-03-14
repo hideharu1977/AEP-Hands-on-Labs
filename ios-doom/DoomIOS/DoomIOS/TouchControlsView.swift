@@ -15,7 +15,6 @@ private enum DoomKey: UInt8 {
     case run       = 0x82   // KEY_RSHIFT
     case strafe    = 0x38   // KEY_ALT (0x38)
     case enter     = 0x0D
-    case use       = 0x20   // space = use/open
 }
 
 /// A transparent overlay view providing virtual gamepad controls for Doom.
@@ -84,7 +83,7 @@ class TouchControlsView: UIView {
             Button(frame: centredRect(dpadCX + sp,    dpadCY,      s, s), key: .right, label: "▶"),
             // Action buttons (right side)
             Button(frame: centredRect(actCX,          actCY - sp * 0.6, s, s), key: .fire,  label: "A"),
-            Button(frame: centredRect(actCX - sp * 0.7, actCY,          s, s), key: .use,   label: "B"),
+            Button(frame: centredRect(actCX - sp * 0.7, actCY,          s, s), key: .space, label: "B"),
             Button(frame: centredRect(actCX + sp * 0.7, actCY,          s, s), key: .run,   label: "Y"),
             // Start / escape (top-centre)
             Button(frame: centredRect(w / 2,          s * 1.2,     s * 1.2, s * 0.7), key: .escape, label: "⏸"),
