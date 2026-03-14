@@ -64,7 +64,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Compile all doomgeneric C source files into a static library.\n# This runs before the Swift/Metal compile phase.\n\nset -e\n\nDOOM_SRC=\"${SRCROOT}/DoomIOS/doomgeneric\"\nOUT_LIB=\"${BUILT_PRODUCTS_DIR}/libdoomgeneric.a\"\nOBJ_DIR=\"${DERIVED_FILE_DIR}/doomgeneric_objs\"\n\n# Auto-clone if directory is missing or incomplete (no .c files)\nif [ ! -d \"${DOOM_SRC}\" ] || ! ls \"${DOOM_SRC}\"/*.c > /dev/null 2>&1; then\n  echo \"note: doomgeneric sources missing or incomplete — cloning now...\"\n  rm -rf \"${DOOM_SRC}\"\n  git clone --depth=1 https://github.com/ozkl/doomgeneric \"${DOOM_SRC}\" || {\n    echo \"error: Failed to clone doomgeneric. Check network and re-build.\"\n    exit 1\n  }\n  echo \"note: doomgeneric cloned successfully.\"\nfi\n\nmkdir -p \"${OBJ_DIR}\"\n\n# Compiler flags matching what Doom expects\nCFLAGS=\"-DNORMALUNIX -DLINUX -O2 -arch ${ARCHS}\\\n  -isysroot ${SDKROOT}\\\n  -miphoneos-version-min=${IPHONEOS_DEPLOYMENT_TARGET}\\\n  -I${DOOM_SRC}\\\n  -Wno-deprecated-declarations -Wno-unused-result\\\n  -Wno-implicit-function-declaration -Wno-int-conversion\"\n\n# Compile each .c file in the doomgeneric directory\nOBJ_FILES=\"\"\nfor SRC in \"${DOOM_SRC}\"/*.c; do\n  BASENAME=$(basename \"${SRC}\" .c)\n  OBJ=\"${OBJ_DIR}/${BASENAME}.o\"\n  xcrun clang ${CFLAGS} -c \"${SRC}\" -o \"${OBJ}\"\n  OBJ_FILES=\"${OBJ_FILES} ${OBJ}\"\ndone\n\n# Create static library\nxcrun ar rcs \"${OUT_LIB}\" ${OBJ_FILES}\n\necho \"doomgeneric engine compiled: ${OUT_LIB}\"\n";
+			shellScript = "# Compile all doomgeneric C source files into a static library.\n# The doomgeneric repo structure is: doomgeneric/ (clone root) -> doomgeneric/ (sources).\n\nset -e\n\nCLONE_DIR=\"${SRCROOT}/DoomIOS/doomgeneric\"\nDOOM_SRC=\"${CLONE_DIR}/doomgeneric\"\nOUT_LIB=\"${BUILT_PRODUCTS_DIR}/libdoomgeneric.a\"\nOBJ_DIR=\"${DERIVED_FILE_DIR}/doomgeneric_objs\"\n\n# Auto-clone if sources are missing or incomplete\nif [ ! -d \"${DOOM_SRC}\" ] || ! ls \"${DOOM_SRC}\"/*.c > /dev/null 2>&1; then\n  echo \"note: doomgeneric sources missing — cloning now...\"\n  rm -rf \"${CLONE_DIR}\"\n  git clone --depth=1 https://github.com/ozkl/doomgeneric \"${CLONE_DIR}\" || {\n    echo \"error: Failed to clone doomgeneric. Run ios-doom/setup.sh and rebuild.\"\n    exit 1\n  }\n  echo \"note: doomgeneric cloned successfully.\"\nfi\n\nmkdir -p \"${OBJ_DIR}\"\n\nCFLAGS=\"-DNORMALUNIX -DLINUX -O2 -arch ${ARCHS} -isysroot ${SDKROOT} -miphoneos-version-min=${IPHONEOS_DEPLOYMENT_TARGET} -I${DOOM_SRC} -Wno-deprecated-declarations -Wno-unused-result -Wno-implicit-function-declaration -Wno-int-conversion\"\n\nOBJ_FILES=\"\"\nfor SRC in \"${DOOM_SRC}\"/*.c; do\n  BASENAME=$(basename \"${SRC}\" .c)\n  OBJ=\"${OBJ_DIR}/${BASENAME}.o\"\n  xcrun clang ${CFLAGS} -c \"${SRC}\" -o \"${OBJ}\"\n  OBJ_FILES=\"${OBJ_FILES} ${OBJ}\"\ndone\n\nxcrun ar rcs \"${OUT_LIB}\" ${OBJ_FILES}\necho \"doomgeneric compiled: ${OUT_LIB}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -341,7 +341,7 @@
 					"$(inherited)",
 				);
 				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/DoomIOS/doomgeneric",
+					"$(SRCROOT)/DoomIOS/doomgeneric/doomgeneric",
 					"$(inherited)",
 				);
 				OTHER_CFLAGS = (
@@ -384,7 +384,7 @@
 					"$(inherited)",
 				);
 				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/DoomIOS/doomgeneric",
+					"$(SRCROOT)/DoomIOS/doomgeneric/doomgeneric",
 					"$(inherited)",
 				);
 				OTHER_CFLAGS = (

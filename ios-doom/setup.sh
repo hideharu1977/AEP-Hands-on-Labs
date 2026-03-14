@@ -10,7 +10,7 @@ echo "=== iOS Doom Setup ==="
 
 # 1. Clone doomgeneric engine (shallow clone for speed)
 # Re-clone if directory is missing OR incomplete (no .c files from a partial clone)
-if [ ! -d "$DOOM_DIR/doomgeneric" ] || ! ls "$DOOM_DIR/doomgeneric"/*.c > /dev/null 2>&1; then
+if [ ! -d "$DOOM_DIR/doomgeneric/doomgeneric" ] || ! ls "$DOOM_DIR/doomgeneric/doomgeneric"/*.c > /dev/null 2>&1; then
   echo "[1/2] Cloning doomgeneric engine..."
   rm -rf "$DOOM_DIR/doomgeneric"
   git clone --depth=1 https://github.com/ozkl/doomgeneric "$DOOM_DIR/doomgeneric"
