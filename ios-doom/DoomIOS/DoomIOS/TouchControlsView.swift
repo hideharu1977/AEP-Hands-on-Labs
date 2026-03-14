@@ -1,20 +1,19 @@
 import UIKit
 
 /*
- * Doom key codes (from doomkeys.h in doomgeneric)
- * Using raw values so we don't need to import the C header directly.
+ * Doom key codes — must match doomkeys.h and the default bindings
+ * in m_controls.c (key_fire, key_use, key_speed, etc.).
  */
 private enum DoomKey: UInt8 {
-    case escape    = 0x1B
-    case space     = 0x20
-    case left      = 0xAC
-    case up        = 0xAD
-    case right     = 0xAE
-    case down      = 0xAF
-    case fire      = 0x80   // KEY_RCTRL
-    case run       = 0x82   // KEY_RSHIFT
-    case strafe    = 0x38   // KEY_ALT (0x38)
-    case enter     = 0x0D
+    case escape    = 0x1B   // KEY_ESCAPE
+    case enter     = 0x0D   // KEY_ENTER  (menu select)
+    case left      = 0xAC   // KEY_LEFTARROW
+    case up        = 0xAD   // KEY_UPARROW
+    case right     = 0xAE   // KEY_RIGHTARROW
+    case down      = 0xAF   // KEY_DOWNARROW
+    case fire      = 0xA3   // KEY_FIRE   (default key_fire binding)
+    case use       = 0xA2   // KEY_USE    (default key_use binding)
+    case run       = 0xB6   // KEY_RSHIFT (default key_speed binding)
 }
 
 /// A transparent overlay view providing virtual gamepad controls for Doom.
@@ -83,7 +82,7 @@ class TouchControlsView: UIView {
             Button(frame: centredRect(dpadCX + sp,    dpadCY,      s, s), key: .right, label: "▶"),
             // Action buttons (right side)
             Button(frame: centredRect(actCX,          actCY - sp * 0.6, s, s), key: .fire,  label: "A"),
-            Button(frame: centredRect(actCX - sp * 0.7, actCY,          s, s), key: .space, label: "B"),
+            Button(frame: centredRect(actCX - sp * 0.7, actCY,          s, s), key: .use,   label: "B"),
             Button(frame: centredRect(actCX + sp * 0.7, actCY,          s, s), key: .run,   label: "Y"),
             // Start / escape (top-centre)
             Button(frame: centredRect(w / 2,          s * 1.2,     s * 1.2, s * 0.7), key: .escape, label: "⏸"),
@@ -179,8 +178,15 @@ class TouchControlsView: UIView {
         guard wasPressed != pressed else { return }
 
         buttons[index].isPressed = pressed
-        let key = buttons[index].key.rawValue
-        dg_ios_push_key(pressed ? 1 : 0, key)
+        let p: Int32 = pressed ? 1 : 0
+        let key = buttons[index].key
+        dg_ios_push_key(p, key.rawValue)
+
+        // A (fire) also sends Enter so it doubles as menu-select.
+        // KEY_FIRE is ignored in menus; KEY_ENTER is ignored in gameplay.
+        if key == .fire {
+            dg_ios_push_key(p, DoomKey.enter.rawValue)
+        }
 
         // Redraw only the changed button region
         setNeedsDisplay(buttons[index].frame.insetBy(dx: -4, dy: -4))
