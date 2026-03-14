@@ -128,8 +128,11 @@ private func doomThreadEntry(_ ptr: UnsafeMutableRawPointer) -> UnsafeMutableRaw
     argv.withUnsafeMutableBufferPointer { buf in
         doomgeneric_Create(ctx.argc, buf.baseAddress)
     }
-    // doomgeneric_Create runs the game loop forever via D_DoomMain → D_DoomLoop.
-    // If it somehow returns (shouldn't happen), free the C strings.
-    ctx.argv.forEach { free($0) }
-    return nil
+    // doomgeneric_Create does initialization + two bootstrap tics, then returns.
+    // The actual game loop must be driven by calling doomgeneric_Tick() repeatedly —
+    // this matches how all other doomgeneric ports work (SDL, Allegro, Linux, etc.
+    // all have their own `while(1) { doomgeneric_Tick(); }` after Create returns).
+    while true {
+        doomgeneric_Tick()
+    }
 }
