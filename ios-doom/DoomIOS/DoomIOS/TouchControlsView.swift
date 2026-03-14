@@ -39,7 +39,7 @@ class TouchControlsView: UIView {
 
     private let buttonSize: CGFloat = 60
     private let dpadSpacing: CGFloat = 64   // centre-to-centre of adjacent d-pad buttons
-    private let buttonAlpha: CGFloat = 0.35
+    private let buttonAlpha: CGFloat = 0.12
 
     // MARK: - Init
 
@@ -100,25 +100,14 @@ class TouchControlsView: UIView {
     override func draw(_ rect: CGRect) {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         for button in buttons {
-            let color: UIColor = button.isPressed ? .white : .lightGray
-            ctx.setFillColor(color.withAlphaComponent(buttonAlpha).cgColor)
-            ctx.setStrokeColor(UIColor.white.withAlphaComponent(0.5).cgColor)
-            ctx.setLineWidth(1.5)
+            // When pressed show a brighter fill; otherwise just a faint outline
+            let alpha: CGFloat = button.isPressed ? buttonAlpha * 3 : buttonAlpha
+            ctx.setFillColor(UIColor.white.withAlphaComponent(alpha).cgColor)
+            ctx.setStrokeColor(UIColor.white.withAlphaComponent(alpha * 2).cgColor)
+            ctx.setLineWidth(1)
             let path = UIBezierPath(roundedRect: button.frame, cornerRadius: 8)
             ctx.addPath(path.cgPath)
             ctx.drawPath(using: .fillStroke)
-
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 20, weight: .bold),
-                .foregroundColor: UIColor.white.withAlphaComponent(0.9)
-            ]
-            let str = button.label as NSString
-            let strSize = str.size(withAttributes: attrs)
-            let strOrigin = CGPoint(
-                x: button.frame.midX - strSize.width / 2,
-                y: button.frame.midY - strSize.height / 2
-            )
-            str.draw(at: strOrigin, withAttributes: attrs)
         }
     }
 
