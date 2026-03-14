@@ -122,8 +122,7 @@ private final class DoomThreadContext {
 }
 
 /// C-compatible thread entry point for the Doom game loop.
-private func doomThreadEntry(_ ptr: UnsafeMutableRawPointer?) -> UnsafeMutableRawPointer? {
-    guard let ptr = ptr else { return nil }
+private func doomThreadEntry(_ ptr: UnsafeMutableRawPointer) -> UnsafeMutableRawPointer? {
     let ctx = Unmanaged<DoomThreadContext>.fromOpaque(ptr).takeRetainedValue()
     var argv = ctx.argv
     argv.withUnsafeMutableBufferPointer { buf in
