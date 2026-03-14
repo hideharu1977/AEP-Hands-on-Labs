@@ -20,8 +20,9 @@ class DoomRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Frame staging buffer
 
-    private let doomWidth  = 320
-    private let doomHeight = 200
+    // Must match DOOMGENERIC_RESX / DOOMGENERIC_RESY in doomgeneric.h (640 × 400).
+    private let doomWidth  = 640
+    private let doomHeight = 400
     /// CPU-side buffer reused every frame to avoid repeated allocation.
     private var stagingBuffer: [UInt8]
 
@@ -38,7 +39,7 @@ class DoomRenderer: NSObject, MTKViewDelegate {
         }
         self.device = device
         self.commandQueue = commandQueue
-        self.stagingBuffer = [UInt8](repeating: 0, count: 320 * 200 * 4)
+        self.stagingBuffer = [UInt8](repeating: 0, count: 640 * 400 * 4)
         super.init()
 
         guard buildPipeline(view: view),
@@ -145,7 +146,9 @@ class DoomRenderer: NSObject, MTKViewDelegate {
     private func updateLetterbox(drawableSize size: CGSize) {
         guard size.width > 0, size.height > 0 else { return }
         let screenAspect = Float(size.width  / size.height)
-        let doomAspect   = Float(doomWidth)  / Float(doomHeight)  // 320/200 = 1.6
+        // Doom's 320×200 (640×400) was authored for 4:3 CRT displays — pixels
+        // were non-square (1.2× taller than wide).  Use 4:3 so it looks correct.
+        let doomAspect: Float = 4.0 / 3.0
 
         let quadW: Float
         let quadH: Float
