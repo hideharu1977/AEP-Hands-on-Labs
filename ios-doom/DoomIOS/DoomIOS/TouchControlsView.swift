@@ -63,6 +63,7 @@ class TouchControlsView: UIView {
     private func buildButtons() {
         let w = bounds.width
         let h = bounds.height
+        print("[TouchControls] buildButtons: bounds=\(bounds)")
         let s = buttonSize
         let sp = dpadSpacing
 
@@ -126,7 +127,9 @@ class TouchControlsView: UIView {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let pt = touch.location(in: self)
-            if let idx = buttonIndex(for: pt) {
+            let idx = buttonIndex(for: pt)
+            print("[TouchControls] touchesBegan pt=\(pt) buttonIdx=\(String(describing: idx)) buttons=\(buttons.count)")
+            if let idx = idx {
                 touchButtonMap[touch] = idx
                 pressButton(idx, pressed: true)
             }
@@ -180,6 +183,7 @@ class TouchControlsView: UIView {
         buttons[index].isPressed = pressed
         let p: Int32 = pressed ? 1 : 0
         let key = buttons[index].key
+        print("[TouchControls] pressButton[\(index)] label=\(buttons[index].label) key=0x\(String(key.rawValue, radix: 16)) pressed=\(pressed)")
         dg_ios_push_key(p, key.rawValue)
 
         // A (fire) also sends Enter so it doubles as menu-select.
