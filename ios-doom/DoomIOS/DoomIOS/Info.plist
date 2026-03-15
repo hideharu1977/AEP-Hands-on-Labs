@@ -5,8 +5,9 @@
 <dict>
     <key>CFBundleDevelopmentRegion</key>
     <string>en</string>
+    <!-- "Doom" is a Bethesda/id Software trademark; use the free-content name -->
     <key>CFBundleDisplayName</key>
-    <string>Doom</string>
+    <string>Freedoom</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -59,6 +60,13 @@
     <key>UIRequiresFullScreen</key>
     <true/>
 
+    <!-- Launch screen: black background, no storyboard needed -->
+    <key>UILaunchScreen</key>
+    <dict>
+        <key>UIColorName</key>
+        <string>LaunchScreenBackground</string>
+    </dict>
+
     <!-- Metal requires A7+ GPU (all modern iPhones/iPads) -->
     <key>UIRequiredDeviceCapabilities</key>
     <array>
@@ -68,5 +76,10 @@
 
     <key>LSRequiresIPhoneOS</key>
     <true/>
+
+    <!-- App Store: declare no export-controlled encryption is used.
+         The game uses no cryptography (no HTTPS, no TLS, no crypto libs). -->
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
 </dict>
 </plist>
